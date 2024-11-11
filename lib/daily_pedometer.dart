@@ -5,9 +5,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class DailyPedometer {
-  static final EventChannel _stepCountChannel =
-      const EventChannel('daily_step_count');
-  final DailyPedometerStorage storage = DailyPedometerStorage();
+  static const EventChannel _rawStepCountChannel =
+      EventChannel('daily_pedometer_raw_step_count');
+  static final StreamController<int> _dailyStepCountStreamController =
+      StreamController<int>();
+  final DailyPedometerStorage _storage = DailyPedometerStorage();
 
   bool _isWriteMode = false;
   int _step = 0;
@@ -21,12 +23,14 @@ class DailyPedometer {
   }
 
   Stream<int> get stepCountStream {
-    return _stepCountChannel.receiveBroadcastStream().asyncMap((event) async {
+    return _rawStepCountChannel
+        .receiveBroadcastStream()
+        .asyncMap((event) async {
       StepCount stepCount = StepCount._(event);
 
       if (_isWriteMode) {
         saveStepCount(stepCount);
-        _storageSteps ??= await storage.read();
+        _storageSteps ??= await _storage.read();
       } else {
         await getStorageSteps(stepCount);
       }
@@ -37,7 +41,7 @@ class DailyPedometer {
   }
 
   Future<void> initialized() async {
-    _storageSteps = await storage.read();
+    _storageSteps = await _storage.read();
     if (_storageSteps["todayStepCount"] != null) {
       StepCount stepCount = StepCount._(_storageSteps["todayStepCount"]);
       _step = await getSteps(stepCount);
@@ -63,7 +67,7 @@ class DailyPedometer {
 
     _debounceTimer = Timer(const Duration(seconds: 2), () async {
       debugPrint("DailyPedometer : save count");
-      _storageSteps = await storage.save(stepCount);
+      _storageSteps = await _storage.save(stepCount);
     });
   }
 
@@ -82,8 +86,8 @@ class DailyPedometer {
     }
 
     if (isFlush) {
-      storage.flush();
-      _storageSteps = await storage.read();
+      _storage.flush();
+      _storageSteps = await _storage.read();
       _lastEventTime = eventTime;
 
       debugPrint("DailyPedometer : flush read");

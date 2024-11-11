@@ -34,7 +34,7 @@ class _MyAppState extends State<MyApp> {
 
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
-    String platformVersion;
+    // String platformVersion;
     // Platform messages may fail, so we use a try/catch PlatformException.
     // We also handle the message potentially returning null.
     // try {
@@ -56,7 +56,8 @@ class _MyAppState extends State<MyApp> {
 
     pedometer.stepCountStream.listen((event) async {
       setState(() {
-        _platformVersion = " ${event} 걸음이다앗!";
+        print("stepCountStream : $event");
+        _platformVersion = " $event 걸음이다앗!";
       });
     });
   }
