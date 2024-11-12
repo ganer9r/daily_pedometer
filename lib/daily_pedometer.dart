@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:daily_pedometer/daily_pedometer_storage.dart';
 import 'package:flutter/services.dart';
+import 'package:daily_pedometer/value_objects.dart';
 
 class DailyPedometer {
   static DailyPedometer? instance;
@@ -22,7 +23,7 @@ class DailyPedometer {
 
   StepData? _lastStepData;
   get lastStepData => _lastStepData;
-  get steps => _lastStepData?.getDailySteps() ?? 0;
+  get steps => _lastStepData?.getDailySteps(DateTime.now()) ?? 0;
   get dailyStepCountStream => _dailyStepCountStreamController.stream;
 
   var isInitialized = false;
@@ -38,15 +39,16 @@ class DailyPedometer {
       final stepCountFromBoot = event as int;
       // bootCount는 안전을 위한 값이므로, 없어도 잘 동작해야함.
       // 따라서 bootCount가 null이면 0으로 가정한다.
-      final stepCount =
-          StepCountWithTimestamp(stepCountFromBoot, bootCount ?? 0);
+      final stepCount = StepCountWithTimestamp(
+          stepCountFromBoot, bootCount ?? 0, DateTime.now());
       final stepData = await _storage.read();
       _lastStepData = stepData.update(stepCount);
 
       if (isWriteMode && _lastStepData != stepData) {
         await _storage.debouncedSave(_lastStepData!);
       }
-      _dailyStepCountStreamController.add(_lastStepData!.getDailySteps());
+      _dailyStepCountStreamController
+          .add(_lastStepData!.getDailySteps(stepCount.timeStamp));
     });
     isInitialized = true;
   }
@@ -58,17 +60,4 @@ class DailyPedometer {
   Future<void> reattachStepStream() async {
     return await methodChannel.invokeMethod<void>('reattachStepStream');
   }
-}
-
-class StepCountWithTimestamp {
-  final DateTime timeStamp;
-  final int stepsFromBoot;
-  final int bootCount;
-
-  StepCountWithTimestamp(this.stepsFromBoot, this.bootCount)
-      : timeStamp = DateTime.now();
-
-  @override
-  String toString() =>
-      'Steps taken: $stepsFromBoot at ${timeStamp.toIso8601String()}';
 }
