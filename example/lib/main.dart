@@ -7,7 +7,6 @@ import 'dart:async';
 import 'package:daily_pedometer/daily_pedometer.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_background_service_android/flutter_background_service_android.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,12 +48,13 @@ class _MyAppState extends State<MyApp> {
     // setState to update our non-existent appearance.
     if (!mounted) return;
 
-    DailyPedometer pedometer = await DailyPedometer.create();
+    final pedometer = DailyPedometer();
+    await pedometer.initialize(false);
     setState(() {
       _platformVersion = " ${pedometer.steps} 걸음이다앗!";
     });
 
-    pedometer.stepCountStream.listen((event) async {
+    pedometer.dailyStepCountStream.listen((event) async {
       setState(() {
         print("stepCountStream : $event");
         _platformVersion = " $event 걸음이다앗!";
@@ -162,7 +162,8 @@ void onStart(ServiceInstance service) async {
   });
 
   if (service is AndroidServiceInstance) {
-    DailyPedometer pedometer = await DailyPedometer.create();
+    DailyPedometer pedometer = DailyPedometer();
+    await pedometer.initialize(true);
     print("DailyPedometer foregrondService ${pedometer.steps}");
 
     flutterLocalNotificationsPlugin.show(
@@ -176,8 +177,8 @@ void onStart(ServiceInstance service) async {
       ),
     );
 
-    pedometer.setMode(true);
-    pedometer.stepCountStream.listen((event) async {
+    pedometer.dailyStepCountStream.listen((event) async {
+      print("DailyPedometer foregrondService $event");
       // 여기서 push 처리 하는게 더 좋지만 현재는 백그라운드 제어 불가능..
       flutterLocalNotificationsPlugin.show(
         888,

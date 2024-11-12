@@ -1,132 +1,76 @@
 import 'dart:async';
 
 import 'package:daily_pedometer/daily_pedometer_storage.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class DailyPedometer {
-  static const EventChannel _rawStepCountChannel =
-      EventChannel('daily_pedometer_raw_step_count');
-  static final StreamController<int> _dailyStepCountStreamController =
+  static DailyPedometer? instance;
+
+  final EventChannel _rawStepCountWithTimestampChannel =
+      const EventChannel('daily_pedometer_raw_step_count');
+  final StreamController<int> _dailyStepCountStreamController =
       StreamController<int>();
   final DailyPedometerStorage _storage = DailyPedometerStorage();
+  final methodChannel = const MethodChannel('daily_pedometer');
 
-  bool _isWriteMode = false;
-  int _step = 0;
-  dynamic _storageSteps;
-  DateTime? _lastEventTime;
-
-  static create() async {
-    var pedometer = DailyPedometer();
-    await pedometer.initialized();
-    return pedometer;
+  factory DailyPedometer() {
+    instance ??= DailyPedometer._internal();
+    return instance!;
   }
 
-  Stream<int> get stepCountStream {
-    return _rawStepCountChannel
+  DailyPedometer._internal();
+
+  StepData? _lastStepData;
+  get lastStepData => _lastStepData;
+  get steps => _lastStepData?.getDailySteps() ?? 0;
+  get dailyStepCountStream => _dailyStepCountStreamController.stream;
+
+  var isInitialized = false;
+  Future<void> initialize(bool isWriteMode) async {
+    if (isInitialized) return;
+
+    final bootCount = await getBootCount();
+
+    _lastStepData = await _storage.read();
+    _rawStepCountWithTimestampChannel
         .receiveBroadcastStream()
-        .asyncMap((event) async {
-      StepCount stepCount = StepCount._(event);
+        .listen((event) async {
+      final stepCountFromBoot = event as int;
+      // bootCount는 안전을 위한 값이므로, 없어도 잘 동작해야함.
+      // 따라서 bootCount가 null이면 0으로 가정한다.
+      final stepCount =
+          StepCountWithTimestamp(stepCountFromBoot, bootCount ?? 0);
+      final stepData = await _storage.read();
+      _lastStepData = stepData.update(stepCount);
 
-      if (_isWriteMode) {
-        saveStepCount(stepCount);
-        _storageSteps ??= await _storage.read();
-      } else {
-        await getStorageSteps(stepCount);
+      if (isWriteMode && _lastStepData != stepData) {
+        await _storage.debouncedSave(_lastStepData!);
       }
-
-      _step = await getSteps(stepCount);
-      return _step;
+      _dailyStepCountStreamController.add(_lastStepData!.getDailySteps());
     });
+    isInitialized = true;
   }
 
-  Future<void> initialized() async {
-    _storageSteps = await _storage.read();
-    if (_storageSteps["todayStepCount"] != null) {
-      StepCount stepCount = StepCount._(_storageSteps["todayStepCount"]);
-      _step = await getSteps(stepCount);
-
-      print("DailyPedometer initialized $_step");
-    }
+  Future<int?> getBootCount() async {
+    return await methodChannel.invokeMethod<int>('getBootCount');
   }
 
-  int get steps {
-    return _step;
-  }
-
-  void setMode(bool isWriteMode) {
-    _isWriteMode = isWriteMode;
-  }
-
-  Timer? _debounceTimer;
-
-  void saveStepCount(StepCount stepCount) {
-    if (_debounceTimer?.isActive ?? false) {
-      _debounceTimer!.cancel();
-    }
-
-    _debounceTimer = Timer(const Duration(seconds: 2), () async {
-      debugPrint("DailyPedometer : save count");
-      _storageSteps = await _storage.save(stepCount);
-    });
-  }
-
-  getStorageSteps(stepCount) async {
-    DateTime eventTime = stepCount.timeStamp;
-    bool isFlush = false;
-
-    if (_storageSteps != null &&
-        stepCount.getDateAsString() != _storageSteps["todayDate"]) {
-      isFlush = true;
-    }
-
-    if (_lastEventTime == null ||
-        eventTime.difference(_lastEventTime!).inMinutes >= 10) {
-      isFlush = true;
-    }
-
-    if (isFlush) {
-      _storage.flush();
-      _storageSteps = await _storage.read();
-      _lastEventTime = eventTime;
-
-      debugPrint("DailyPedometer : flush read");
-    }
-  }
-
-  getSteps(StepCount stepCount) async {
-    if (stepCount.getDateAsString() == _storageSteps["todayDate"]) {
-      if (!_storageSteps.containsKey("stack")) {
-        _storageSteps["stack"] = [];
-      }
-
-      final stackCount = _storageSteps["stack"].fold(0, (a, b) => a + b);
-      return (stepCount.steps + stackCount) -
-          _storageSteps["previousStepCount"];
-    } else {
-      return 0;
-    }
+  Future<void> reattachStepStream() async {
+    return await methodChannel.invokeMethod<void>('reattachStepStream');
   }
 }
 
-class StepCount {
-  late DateTime _timeStamp;
-  int _steps = 0;
+class StepCountWithTimestamp {
+  late final DateTime timeStamp;
+  final int stepsFromBoot;
+  final int bootCount;
 
-  StepCount._(dynamic e) {
-    _steps = e as int;
-    _timeStamp = DateTime.now();
-  }
-
-  int get steps => _steps;
-
-  DateTime get timeStamp => _timeStamp;
-
-  String getDateAsString() {
-    return _timeStamp.toIso8601String().split('T')[0];
+  StepCountWithTimestamp(this.stepsFromBoot, this.bootCount,
+      [DateTime? timeStamp]) {
+    timeStamp = timeStamp ?? DateTime.now();
   }
 
   @override
   String toString() =>
-      'Steps taken: $_steps at ${_timeStamp.toIso8601String()}';
+      'Steps taken: $stepsFromBoot at ${timeStamp.toIso8601String()}';
 }

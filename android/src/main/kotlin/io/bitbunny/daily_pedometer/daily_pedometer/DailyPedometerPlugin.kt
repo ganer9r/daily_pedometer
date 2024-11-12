@@ -24,14 +24,14 @@ class DailyPedometerPlugin : FlutterPlugin, MethodCallHandler {
         flutterPluginBinding = _flutterPluginBinding
         val context: Context = flutterPluginBinding.applicationContext
         bootCount =
-                Settings.Global.getInt(
-                        context.contentResolver,
-                        Settings.Global.BOOT_COUNT,
-                )
+            Settings.Global.getInt(
+                context.contentResolver,
+                Settings.Global.BOOT_COUNT,
+            )
         methodChannel = MethodChannel(flutterPluginBinding.binaryMessenger, "daily_pedometer")
         methodChannel.setMethodCallHandler(this)
         stepCountChannel =
-                EventChannel(flutterPluginBinding.binaryMessenger, "daily_pedometer_raw_step_count")
+            EventChannel(flutterPluginBinding.binaryMessenger, "daily_pedometer_raw_step_count")
 
         attachStepStream()
     }
@@ -66,8 +66,8 @@ class DailyPedometerPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     override fun onMethodCall(
-            @NonNull call: MethodCall,
-            @NonNull result: Result,
+        @NonNull call: MethodCall,
+        @NonNull result: Result,
     ) {
         when (call.method) {
             "reattachStepStream" -> {
