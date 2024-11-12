@@ -22,9 +22,10 @@ class DailyPedometer {
   DailyPedometer._internal();
 
   StepData? _lastStepData;
-  get lastStepData => _lastStepData;
-  get steps => _lastStepData?.getDailySteps(DateTime.now()) ?? 0;
-  get dailyStepCountStream => _dailyStepCountStreamController.stream;
+  StepData? get lastStepData => _lastStepData;
+  int get steps => _lastStepData?.getDailySteps(DateTime.now()) ?? 0;
+  Stream<int> get dailyStepCountStream =>
+      _dailyStepCountStreamController.stream;
 
   var isInitialized = false;
   Future<void> initialize(bool isWriteMode) async {
