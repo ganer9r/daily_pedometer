@@ -13,7 +13,9 @@ class DailyPedometerStorage {
   Future<void> save(StepData data) async {
     _lastSaveTime = DateTime.now();
     SharedPreferences preferences = await SharedPreferences.getInstance();
-    await preferences.setString(storageKey, jsonEncode(data.toJson()));
+    final json = jsonEncode(data.toJson());
+    print("DailyPedometerStorage save : $json");
+    await preferences.setString(storageKey, json);
   }
 
   static const _debounceDuration = Duration(seconds: 2);
@@ -103,7 +105,7 @@ class StepData {
         todayDate = json['todayDate'],
         todayStepCount = json['todayStepCount'] ?? 0,
         bootCount = json['bootCount'],
-        stack = json['stack'] ?? [];
+        stack = json['stack']?.cast<int>() ?? [];
 
   StepData.empty()
       : previouseDate = null,

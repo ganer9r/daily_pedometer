@@ -61,14 +61,12 @@ class DailyPedometer {
 }
 
 class StepCountWithTimestamp {
-  late final DateTime timeStamp;
+  final DateTime timeStamp;
   final int stepsFromBoot;
   final int bootCount;
 
-  StepCountWithTimestamp(this.stepsFromBoot, this.bootCount,
-      [DateTime? timeStamp]) {
-    timeStamp = timeStamp ?? DateTime.now();
-  }
+  StepCountWithTimestamp(this.stepsFromBoot, this.bootCount)
+      : timeStamp = DateTime.now();
 
   @override
   String toString() =>
