@@ -14,7 +14,7 @@ import io.flutter.plugin.common.MethodChannel.Result
 /** DailyPedometerPlugin */
 class DailyPedometerPlugin : FlutterPlugin, MethodCallHandler {
     private lateinit var methodChannel: MethodChannel
-    private lateinit var stepCountChannel: EventChannel
+    private var stepCountChannel: EventChannel? = null
     private lateinit var flutterPluginBinding: FlutterPlugin.FlutterPluginBinding
     private var stepCountHandler: SensorStreamHandler? = null
     private var bootCount: Int = 0
@@ -30,14 +30,11 @@ class DailyPedometerPlugin : FlutterPlugin, MethodCallHandler {
             )
         methodChannel = MethodChannel(flutterPluginBinding.binaryMessenger, "daily_pedometer")
         methodChannel.setMethodCallHandler(this)
-        stepCountChannel =
-            EventChannel(flutterPluginBinding.binaryMessenger, "daily_pedometer_raw_step_count")
 
         attachStepStream()
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        stepCountChannel.setStreamHandler(null)
         dettachStepStream()
         if (::methodChannel.isInitialized) {
             methodChannel.setMethodCallHandler(null)
@@ -45,24 +42,27 @@ class DailyPedometerPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     fun attachStepStream() {
-        if (stepCountHandler == null) {
-            stepCountHandler = SensorStreamHandler(flutterPluginBinding)
-            stepCountChannel.setStreamHandler(stepCountHandler)
-        }
+        if (stepCountChannel != null || stepCountHandler != null) return
+
+        Log.d("DailyPedometerPlugin", "attachStepStream")
+        stepCountChannel =
+            EventChannel(flutterPluginBinding.binaryMessenger, "daily_pedometer_raw_step_count").apply {
+                setStreamHandler(SensorStreamHandler(flutterPluginBinding).also { stepCountHandler = it })
+            }
     }
 
     fun dettachStepStream() {
-        stepCountHandler?.let {
-            stepCountChannel.setStreamHandler(null)
-            stepCountHandler!!.dispose()
-            stepCountHandler = null
-        }
+        Log.d("DailyPedometerPlugin", "dettachStepStream")
+        stepCountChannel?.setStreamHandler(null)
+        stepCountChannel = null
+        stepCountHandler?.dispose()
+        stepCountHandler = null
     }
 
     // step 콜백이 풀리는 경우가 있어, 그런 경우에 대비하여 reattach한다.
-    fun reattachStepStream() {
-        dettachStepStream()
-        attachStepStream()
+    fun refreshSensorListener() {
+        Log.d("DailyPedometerPlugin", "reattachStepStream")
+        stepCountHandler?.refreshSensorListener()
     }
 
     override fun onMethodCall(
@@ -70,8 +70,8 @@ class DailyPedometerPlugin : FlutterPlugin, MethodCallHandler {
         @NonNull result: Result,
     ) {
         when (call.method) {
-            "reattachStepStream" -> {
-                reattachStepStream()
+            "refreshSensorListener" -> {
+                refreshSensorListener()
                 result.success(null)
             }
             "getBootCount" -> {

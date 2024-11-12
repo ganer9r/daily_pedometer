@@ -58,7 +58,7 @@ class DailyPedometer {
     return await methodChannel.invokeMethod<int>('getBootCount');
   }
 
-  Future<void> reattachStepStream() async {
-    return await methodChannel.invokeMethod<void>('reattachStepStream');
+  Future<void> refreshSensorListener() async {
+    return await methodChannel.invokeMethod<void>('refreshSensorListener');
   }
 }

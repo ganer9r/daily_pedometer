@@ -82,7 +82,7 @@ Future<void> initializeService() async {
   if (!Platform.isAndroid) return;
 
   final service = FlutterBackgroundService();
-  service.invoke("stopService");
+  service.invoke("refreshSensorListener");
 
   /// OPTIONAL, using custom notification channel id
   const AndroidNotificationChannel channel = AndroidNotificationChannel(
@@ -161,8 +161,13 @@ void onStart(ServiceInstance service) async {
     service.stopSelf();
   });
 
+  DailyPedometer pedometer = DailyPedometer();
+  service.on("refreshSensorListener").listen((event) async {
+    print("refreshSensorListener");
+    await pedometer.refreshSensorListener();
+  });
+
   if (service is AndroidServiceInstance) {
-    DailyPedometer pedometer = DailyPedometer();
     await pedometer.initialize(true);
     print("DailyPedometer foregrondService ${pedometer.steps}");
 
