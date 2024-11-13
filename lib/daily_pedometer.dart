@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:daily_pedometer/daily_pedometer_storage.dart';
 import 'package:flutter/services.dart';
 import 'package:daily_pedometer/value_objects.dart';
+import 'package:rxdart/rxdart.dart';
 
 class DailyPedometer {
   static DailyPedometer? instance;
@@ -34,10 +35,34 @@ class DailyPedometer {
     final bootCount = await getBootCount();
 
     _lastStepData = await _storage.read();
-    _rawStepCountWithTimestampChannel
-        .receiveBroadcastStream()
-        .listen((event) async {
-      final stepCountFromBoot = event as int;
+
+    final now = DateTime.now();
+
+    final nextMidnight = now.add(const Duration(days: 1)).subtract(Duration(
+        hours: now.hour,
+        minutes: now.minute,
+        seconds: now.second,
+        milliseconds: now.millisecond));
+    final durationToMidnight = nextMidnight.difference(now);
+    final midnightStream = ConcatStream([
+      Stream.value(1),
+      TimerStream(1, durationToMidnight + const Duration(seconds: 1)),
+      Stream.periodic(const Duration(days: 1)),
+    ]);
+
+    final stepStream = Stream<dynamic>.value(null).concatWith(
+        [_rawStepCountWithTimestampChannel.receiveBroadcastStream()]);
+
+    final stream = CombineLatestStream(
+        [stepStream, midnightStream], (values) => values.first as int?);
+
+    stream.listen((stepCountFromBoot) async {
+      if (stepCountFromBoot == null) {
+        _dailyStepCountStreamController
+            .add(_lastStepData!.getDailySteps(DateTime.now()));
+        return;
+      }
+
       // bootCount는 안전을 위한 값이므로, 없어도 잘 동작해야함.
       // 따라서 bootCount가 null이면 0으로 가정한다.
       final stepCount = StepCountWithTimestamp(
