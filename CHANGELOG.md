@@ -6,3 +6,9 @@
 
 ## 0.0.3
 - Fix a bug that prevents retrieving initial step counts
+
+## 0.0.8
+
+- Improved handling of missing steps after device reboot to prevent data loss.
+- Added periodic sensor reconnection to address potential disconnections in the step count sensor.
+- Enhanced reset logic to ensure steps reset to zero accurately at midnight.
