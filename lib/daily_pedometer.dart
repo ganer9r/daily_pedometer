@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:daily_pedometer/value_objects.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:timezone/data/latest_10y.dart';
+import 'package:timezone/data/latest.dart';
 import 'package:timezone/standalone.dart' as tz;
 
 class DailyPedometer {
