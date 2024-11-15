@@ -12,3 +12,7 @@
 - Improved handling of missing steps after device reboot to prevent data loss.
 - Added periodic sensor reconnection to address potential disconnections in the step count sensor.
 - Enhanced reset logic to ensure steps reset to zero accurately at midnight.
+
+## 0.0.9
+
+- Added a feature to fix the time zone, ensuring consistent step tracking regardless of the device’s time zone changes.
