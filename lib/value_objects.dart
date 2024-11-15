@@ -1,5 +1,6 @@
 import 'package:daily_pedometer/helper.dart';
 import 'package:flutter/foundation.dart';
+import 'package:timezone/standalone.dart';
 
 class StepData {
   final String? previouseDate;
@@ -100,7 +101,7 @@ class StepData {
     return StepData.accumulate(this, stepCount);
   }
 
-  int getDailySteps(DateTime now) {
+  int getDailySteps(TZDateTime now) {
     if (formatDate(now) != todayDate) {
       return 0;
     }
@@ -131,7 +132,7 @@ class StepData {
 }
 
 class StepCountWithTimestamp {
-  final DateTime timeStamp;
+  final TZDateTime timeStamp;
   final int stepsFromBoot;
   final int bootCount;
 

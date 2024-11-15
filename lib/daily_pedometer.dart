@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:daily_pedometer/daily_pedometer_storage.dart';
 import 'package:flutter/services.dart';
 import 'package:daily_pedometer/value_objects.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:timezone/data/latest_10y.dart';
+import 'package:timezone/standalone.dart' as tz;
 
 class DailyPedometer {
   static DailyPedometer? instance;
@@ -12,8 +15,10 @@ class DailyPedometer {
       const EventChannel('daily_pedometer_raw_step_count');
   final StreamController<int> _dailyStepCountStreamController =
       StreamController<int>();
-  final DailyPedometerStorage _storage = DailyPedometerStorage();
   final methodChannel = const MethodChannel('daily_pedometer');
+  DailyPedometerStorage? _storage;
+
+  tz.Location? _timezone;
 
   factory DailyPedometer() {
     instance ??= DailyPedometer._internal();
@@ -24,25 +29,36 @@ class DailyPedometer {
 
   StepData? _lastStepData;
   StepData? get lastStepData => _lastStepData;
-  int get steps => _lastStepData?.getDailySteps(DateTime.now()) ?? 0;
+  int get steps =>
+      _lastStepData?.getDailySteps(tz.TZDateTime.now(_timezone!)) ?? 0;
   Stream<int> get dailyStepCountStream =>
       _dailyStepCountStreamController.stream;
 
   var isInitialized = false;
-  Future<void> initialize(bool isWriteMode) async {
+  Future<void> initialize(bool isWriteMode, String? timezone) async {
     if (isInitialized) return;
+
+    if (timezone != null) {
+      initializeTimeZones();
+      _timezone = tz.getLocation(timezone);
+    } else {
+      _timezone = tz.getLocation(await FlutterTimezone.getLocalTimezone());
+    }
+
+    _storage = DailyPedometerStorage(_timezone!);
 
     final bootCount = await getBootCount();
 
-    _lastStepData = await _storage.read();
+    _lastStepData = await _storage!.read();
 
-    final now = DateTime.now();
+    final now = tz.TZDateTime.now(_timezone!);
 
     final nextMidnight = now.add(const Duration(days: 1)).subtract(Duration(
         hours: now.hour,
         minutes: now.minute,
         seconds: now.second,
-        milliseconds: now.millisecond));
+        milliseconds: now.millisecond,
+        microseconds: now.microsecond));
     final durationToMidnight = nextMidnight.difference(now);
     final midnightStream = ConcatStream([
       Stream.value(1),
@@ -66,12 +82,12 @@ class DailyPedometer {
       // bootCount는 안전을 위한 값이므로, 없어도 잘 동작해야함.
       // 따라서 bootCount가 null이면 0으로 가정한다.
       final stepCount = StepCountWithTimestamp(
-          stepCountFromBoot, bootCount ?? 0, DateTime.now());
-      final stepData = await _storage.read();
+          stepCountFromBoot, bootCount ?? 0, tz.TZDateTime.now(_timezone!));
+      final stepData = await _storage!.read();
       _lastStepData = stepData.update(stepCount);
 
       if (isWriteMode && _lastStepData != stepData) {
-        await _storage.debouncedSave(_lastStepData!);
+        await _storage!.debouncedSave(_lastStepData!);
       }
       _dailyStepCountStreamController
           .add(_lastStepData!.getDailySteps(stepCount.timeStamp));

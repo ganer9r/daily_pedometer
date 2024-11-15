@@ -10,9 +10,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_timezone: ^3.0.1
   plugin_platform_interface: ^2.0.2
   rxdart: ^0.28.0
   shared_preferences: ^2.3.3
+  timezone: ^0.10.0
 
 dev_dependencies:
   flutter_test:

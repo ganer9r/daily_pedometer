@@ -1,11 +1,15 @@
 import 'package:daily_pedometer/value_objects.dart';
 import 'package:test/test.dart';
+import 'package:timezone/data/latest_10y.dart';
+import 'package:timezone/standalone.dart';
 
 void main() {
+  initializeTimeZones();
+  final location = getLocation('Asia/Seoul');
   group('StepData', () {
     test('빈 StepData에 stepCount를 추가하면, 걸음수가 0부터 누적되어야 한다', () {
       final emptyStepData = StepData.empty();
-      final firstDay = DateTime(2024, 11, 12, 1, 0, 0);
+      final firstDay = TZDateTime(location, 2024, 11, 12, 1, 0, 0);
 
       final stepCount = StepCountWithTimestamp(10, 0, firstDay);
       final stepData = emptyStepData.update(stepCount);
@@ -38,7 +42,7 @@ void main() {
 
     test('부팅 카운트가 변한 경우에도 걸음이 누적되어야한다.', () {
       final emptyStepData = StepData.empty();
-      final firstDay = DateTime(2024, 11, 12, 1, 0, 0);
+      final firstDay = TZDateTime(location, 2024, 11, 12, 1, 0, 0);
       final stepCount = StepCountWithTimestamp(10, 0, firstDay);
       final stepData = emptyStepData.update(stepCount);
       expect(stepData.getDailySteps(firstDay), 0);
@@ -61,7 +65,7 @@ void main() {
 
     test('json 형태로 변환/로드가 되어야한다', () {
       final emptyStepData = StepData.empty();
-      final firstDay = DateTime(2024, 11, 12, 1, 0, 0);
+      final firstDay = TZDateTime(location, 2024, 11, 12, 1, 0, 0);
       final stepCount = StepCountWithTimestamp(10, 0, firstDay);
       final updatedStepCount = StepCountWithTimestamp(20, 0, firstDay);
       final rebootStepCount = StepCountWithTimestamp(100, 1, firstDay);

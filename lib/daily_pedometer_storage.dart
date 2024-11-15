@@ -4,13 +4,18 @@ import 'dart:convert';
 import 'package:daily_pedometer/helper.dart';
 import 'package:daily_pedometer/value_objects.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/standalone.dart';
 
 class DailyPedometerStorage {
   static const storageKey = 'STEPS';
 
-  DateTime? _lastSaveTime;
+  final Location _timezone;
+
+  DailyPedometerStorage(this._timezone);
+
+  TZDateTime? _lastSaveTime;
   Future<void> save(StepData data) async {
-    _lastSaveTime = DateTime.now();
+    _lastSaveTime = TZDateTime.now(_timezone);
     SharedPreferences preferences = await SharedPreferences.getInstance();
     final json = jsonEncode(data.toJson());
     print("DailyPedometerStorage save : $json");
@@ -22,7 +27,7 @@ class DailyPedometerStorage {
   Timer? _debounceTimer;
 
   Future<void> debouncedSave(StepData data) async {
-    final now = DateTime.now();
+    final now = TZDateTime.now(_timezone);
     // 마지막 저장이 오래되었거나,
     // 데이터의 날짜가 달라졌다면, 타이머 캔슬하고 바로 저장한다.
     if (_lastSaveTime == null ||
@@ -44,7 +49,7 @@ class DailyPedometerStorage {
     });
   }
 
-  DateTime? _lastReloadTime;
+  TZDateTime? _lastReloadTime;
   static const _reloadDuration = Duration(minutes: 10);
   reload() async {
     SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -56,7 +61,7 @@ class DailyPedometerStorage {
       return true;
     }
 
-    final now = DateTime.now();
+    final now = TZDateTime.now(_timezone);
 
     // 마지막 리로드가 오래되었다면, 리로드 필요.
     if (_lastReloadTime!.isBefore(now.subtract(_reloadDuration))) {
