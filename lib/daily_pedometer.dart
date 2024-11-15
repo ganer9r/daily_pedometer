@@ -35,11 +35,11 @@ class DailyPedometer {
       _dailyStepCountStreamController.stream;
 
   var isInitialized = false;
-  Future<void> initialize(bool isWriteMode, String? timezone) async {
+  Future<void> initialize(bool isWriteMode, [String? timezone]) async {
     if (isInitialized) return;
 
+    initializeTimeZones();
     if (timezone != null) {
-      initializeTimeZones();
       _timezone = tz.getLocation(timezone);
     } else {
       _timezone = tz.getLocation(await FlutterTimezone.getLocalTimezone());
@@ -75,7 +75,7 @@ class DailyPedometer {
     stream.listen((stepCountFromBoot) async {
       if (stepCountFromBoot == null) {
         _dailyStepCountStreamController
-            .add(_lastStepData!.getDailySteps(DateTime.now()));
+            .add(_lastStepData!.getDailySteps(tz.TZDateTime.now(_timezone!)));
         return;
       }
 
