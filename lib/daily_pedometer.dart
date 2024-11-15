@@ -35,10 +35,13 @@ class DailyPedometer {
       _dailyStepCountStreamController.stream;
 
   var isInitialized = false;
-  Future<void> initialize(bool isWriteMode, [String? timezone]) async {
+  Future<void> initialize(bool isWriteMode,
+      [String? timezone, bool initTimeZoneDB = true]) async {
     if (isInitialized) return;
 
-    initializeTimeZones();
+    if (initTimeZoneDB) {
+      initializeTimeZones();
+    }
     if (timezone != null) {
       _timezone = tz.getLocation(timezone);
     } else {
