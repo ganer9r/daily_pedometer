@@ -85,7 +85,7 @@ void main() {
       expect(json['stack'], [20]);
 
       final stepData2 = StepData.fromJson(json);
-      expect(stepData2.previouseDate, '2024-11-11');
+      expect(stepData2.previousDate, '2024-11-11');
       expect(stepData2.previousStepCount, 10);
       expect(stepData2.todayDate, '2024-11-12');
       expect(stepData2.todayStepCount, 100);
@@ -93,6 +93,33 @@ void main() {
       expect(stepData2.stack, [20]);
 
       expect(stepData, stepData2);
+    });
+
+    test('bootCount가 null이었던 경우에는 부팅 카운트가 변하지 않았다고 가정한다.', () {
+      final day1 = TZDateTime(location, 2024, 11, 12, 1, 0, 0);
+      final emptyStepData =
+          StepData("2024-11-12", 10, "2024-11-12", 100, null, []);
+      expect(emptyStepData.getDailySteps(day1), 90);
+      final stepCount1 = StepCountWithTimestamp(110, 1, day1);
+      final stepData1 = emptyStepData.update(stepCount1);
+      expect(stepData1.getDailySteps(day1), 100);
+
+      final day2 = day1.add(const Duration(days: 1));
+      final stepCount2 = StepCountWithTimestamp(120, 1, day2);
+      final stepData2 = stepData1.update(stepCount2);
+      expect(stepData2.getDailySteps(day2), 10);
+    });
+
+    test('bootCount가 null인 상태에서 날짜가 바뀌어도 부팅 카운트가 변하지 않았다고 가정한다.', () {
+      final day1 = TZDateTime(location, 2024, 11, 12, 1, 0, 0);
+      final emptyStepData =
+          StepData("2024-11-12", 10, "2024-11-12", 100, null, []);
+      expect(emptyStepData.getDailySteps(day1), 90);
+
+      final day2 = day1.add(const Duration(days: 1));
+      final stepCount2 = StepCountWithTimestamp(110, 1, day2);
+      final stepData2 = emptyStepData.update(stepCount2);
+      expect(stepData2.getDailySteps(day2), 10);
     });
   });
 }
