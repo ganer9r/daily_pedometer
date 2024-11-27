@@ -39,6 +39,9 @@ class DailyPedometer {
       [String? timezone, bool initTimeZoneDB = true]) async {
     if (isInitialized) return;
 
+    // 중복 초기화 방지
+    isInitialized = true;
+
     if (initTimeZoneDB) {
       initializeTimeZones();
     }
@@ -76,7 +79,7 @@ class DailyPedometer {
         [stepStream, midnightStream], (values) => values.first as int?);
 
     stream.listen((stepCountFromBoot) async {
-      if (stepCountFromBoot == null) {
+      if (stepCountFromBoot == null && _lastStepData != null) {
         _dailyStepCountStreamController
             .add(_lastStepData!.getDailySteps(tz.TZDateTime.now(_timezone!)));
         return;
@@ -95,7 +98,6 @@ class DailyPedometer {
       _dailyStepCountStreamController
           .add(_lastStepData!.getDailySteps(stepCount.timeStamp));
     });
-    isInitialized = true;
   }
 
   Future<int?> getBootCount() async {

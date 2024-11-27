@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:daily_pedometer/value_objects.dart';
 import 'package:test/test.dart';
 import 'package:timezone/data/latest_10y.dart';
@@ -120,6 +122,44 @@ void main() {
       final stepCount2 = StepCountWithTimestamp(110, 1, day2);
       final stepData2 = emptyStepData.update(stepCount2);
       expect(stepData2.getDailySteps(day2), 10);
+    });
+
+    test("기존 플러그인에서 새로운 플러그인으로 업데이트 된 경우", () {
+      const json =
+          '{"previousDate":"2024-11-24", "previousStepCount": 588682, "todayDate": "2024-11-25", "todayStepCount": 620085, "stack": [12]}';
+
+      final stepData = StepData.fromJson(jsonDecode(json));
+      expect(stepData.previousDate, '2024-11-24');
+      expect(stepData.previousStepCount, 588682);
+      expect(stepData.todayDate, '2024-11-25');
+      expect(stepData.todayStepCount, 620085);
+      expect(stepData.bootCount, null);
+      expect(stepData.stack, [12]);
+      expect(
+          stepData.getDailySteps(TZDateTime(location, 2024, 11, 25, 13, 22, 0)),
+          31415);
+      expect(
+          stepData.getDailySteps(TZDateTime(location, 2024, 11, 26, 13, 22, 0)),
+          0);
+
+      final stepCount = StepCountWithTimestamp(
+          620086, 9999, TZDateTime(location, 2024, 11, 25, 13, 22, 0));
+      final stepData2 = stepData.update(stepCount);
+      expect(stepData2.previousDate, '2024-11-24');
+      expect(stepData2.previousStepCount, 588682);
+      expect(stepData2.todayDate, '2024-11-25');
+      expect(stepData2.todayStepCount, 620086);
+      expect(stepData2.bootCount, 9999);
+      expect(stepData2.stack, [12]);
+      expect(
+          stepData2
+              .getDailySteps(TZDateTime(location, 2024, 11, 25, 13, 22, 0)),
+          31416);
+
+      expect(
+          stepData2
+              .getDailySteps(TZDateTime(location, 2024, 11, 26, 13, 22, 0)),
+          0);
     });
   });
 }
