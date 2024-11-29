@@ -9,6 +9,8 @@ class StepData {
   final int todayStepCount;
   final int? bootCount;
   final List<int> stack;
+  final String? lastSavedAt;
+  final String? previousStepCountSavedAt;
 
   StepData.fromJson(Map<String, dynamic> json)
       : previousDate = json['previousDate'],
@@ -16,7 +18,9 @@ class StepData {
         todayDate = json['todayDate'],
         todayStepCount = json['todayStepCount'] ?? 0,
         bootCount = json['bootCount'],
-        stack = json['stack']?.cast<int>() ?? [];
+        stack = json['stack']?.cast<int>() ?? [],
+        lastSavedAt = json['lastSavedAt'],
+        previousStepCountSavedAt = json['previousStepCountSavedAt'];
 
   StepData.empty()
       : previousDate = null,
@@ -24,10 +28,19 @@ class StepData {
         todayDate = null,
         todayStepCount = 0,
         bootCount = null,
-        stack = [];
+        stack = [],
+        lastSavedAt = null,
+        previousStepCountSavedAt = null;
 
-  StepData(this.previousDate, this.previousStepCount, this.todayDate,
-      this.todayStepCount, this.bootCount, this.stack);
+  StepData(
+      this.previousDate,
+      this.previousStepCount,
+      this.todayDate,
+      this.todayStepCount,
+      this.bootCount,
+      this.stack,
+      this.lastSavedAt,
+      this.previousStepCountSavedAt);
 
   StepData.initialData(StepCountWithTimestamp stepCount)
       : previousDate =
@@ -36,7 +49,9 @@ class StepData {
         todayDate = formatDate(stepCount.timeStamp),
         todayStepCount = stepCount.stepsFromBoot,
         bootCount = stepCount.bootCount,
-        stack = [];
+        stack = [],
+        lastSavedAt = DateTime.now().toIso8601String(),
+        previousStepCountSavedAt = null;
 
   // 날짜가 달라진 경우
   StepData.shiftDate(StepData stepData, StepCountWithTimestamp stepCount)
@@ -54,7 +69,9 @@ class StepData {
         todayDate = formatDate(stepCount.timeStamp),
         todayStepCount = stepCount.stepsFromBoot,
         bootCount = stepCount.bootCount,
-        stack = [];
+        stack = [],
+        lastSavedAt = DateTime.now().toIso8601String(),
+        previousStepCountSavedAt = stepData.lastSavedAt;
 
   // 부팅이 새로 된 경우
   StepData.newBoot(StepData stepData, StepCountWithTimestamp stepCount)
@@ -63,7 +80,9 @@ class StepData {
         todayDate = stepData.todayDate,
         todayStepCount = stepCount.stepsFromBoot,
         bootCount = stepCount.bootCount,
-        stack = [...stepData.stack, stepData.todayStepCount];
+        stack = [...stepData.stack, stepData.todayStepCount],
+        lastSavedAt = DateTime.now().toIso8601String(),
+        previousStepCountSavedAt = stepData.previousStepCountSavedAt;
 
   // 일반적인 상황에서 걸음 수 누적
   StepData.accumulate(StepData stepData, StepCountWithTimestamp stepCount)
@@ -72,7 +91,9 @@ class StepData {
         todayDate = stepData.todayDate,
         todayStepCount = stepCount.stepsFromBoot,
         bootCount = stepCount.bootCount,
-        stack = stepData.stack;
+        stack = stepData.stack,
+        lastSavedAt = DateTime.now().toIso8601String(),
+        previousStepCountSavedAt = stepData.previousStepCountSavedAt;
 
   Map<String, dynamic> toJson() => {
         'previousDate': previousDate,
@@ -81,6 +102,8 @@ class StepData {
         'todayStepCount': todayStepCount,
         'bootCount': bootCount,
         'stack': stack,
+        'lastSavedAt': lastSavedAt,
+        'previousStepCountSavedAt': previousStepCountSavedAt,
       };
 
   StepData update(StepCountWithTimestamp stepCount) {
@@ -127,11 +150,13 @@ class StepData {
           todayDate == other.todayDate &&
           todayStepCount == other.todayStepCount &&
           bootCount == other.bootCount &&
+          lastSavedAt == other.lastSavedAt &&
+          previousStepCountSavedAt == other.previousStepCountSavedAt &&
           listEquals(stack, other.stack);
 
   @override
   String toString() {
-    return 'StepData{previousDate: $previousDate, previousStepCount: $previousStepCount, todayDate: $todayDate, todayStepCount: $todayStepCount, bootCount: $bootCount, stack: $stack}';
+    return 'StepData${toJson()}';
   }
 }
 

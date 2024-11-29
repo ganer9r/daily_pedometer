@@ -100,7 +100,7 @@ void main() {
     test('bootCount가 null이었던 경우에는 부팅 카운트가 변하지 않았다고 가정한다.', () {
       final day1 = TZDateTime(location, 2024, 11, 12, 1, 0, 0);
       final emptyStepData =
-          StepData("2024-11-12", 10, "2024-11-12", 100, null, []);
+          StepData("2024-11-12", 10, "2024-11-12", 100, null, [], null, null);
       expect(emptyStepData.getDailySteps(day1), 90);
       final stepCount1 = StepCountWithTimestamp(110, 1, day1);
       final stepData1 = emptyStepData.update(stepCount1);
@@ -115,7 +115,7 @@ void main() {
     test('bootCount가 null인 상태에서 날짜가 바뀌어도 부팅 카운트가 변하지 않았다고 가정한다.', () {
       final day1 = TZDateTime(location, 2024, 11, 12, 1, 0, 0);
       final emptyStepData =
-          StepData("2024-11-12", 10, "2024-11-12", 100, null, []);
+          StepData("2024-11-12", 10, "2024-11-12", 100, null, [], null, null);
       expect(emptyStepData.getDailySteps(day1), 90);
 
       final day2 = day1.add(const Duration(days: 1));

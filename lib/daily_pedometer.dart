@@ -88,7 +88,7 @@ class DailyPedometer {
       // bootCount는 안전을 위한 값이므로, 없어도 잘 동작해야함.
       // 따라서 bootCount가 null이면 0으로 가정한다.
       final stepCount = StepCountWithTimestamp(
-          stepCountFromBoot, bootCount ?? 0, tz.TZDateTime.now(_timezone!));
+          stepCountFromBoot!, bootCount ?? 0, tz.TZDateTime.now(_timezone!));
       final stepData = await _storage!.read();
       _lastStepData = stepData.update(stepCount);
 
