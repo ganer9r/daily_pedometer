@@ -42,7 +42,7 @@ void main() {
       expect(stepData5.getDailySteps(secondDay), 96);
     });
 
-    test('부팅 카운트가 변한 경우에도 걸음이 누적되어야한다.', () {
+    test('재부팅이 된  경우에도 걸음이 누적되어야한다.', () {
       final emptyStepData = StepData.empty();
       final firstDay = TZDateTime(location, 2024, 11, 12, 1, 0, 0);
       final stepCount = StepCountWithTimestamp(10, 0, firstDay);
@@ -55,22 +55,22 @@ void main() {
       expect(stepData2.getDailySteps(firstDay), 22);
 
       // 새로 부팅됨.
-      final stepCount3 = StepCountWithTimestamp(34, 1, firstDay);
+      final stepCount3 = StepCountWithTimestamp(31, 1, firstDay);
       final stepData3 = stepData2.update(stepCount3);
-      expect(stepData3.getDailySteps(firstDay), 56);
+      expect(stepData3.getDailySteps(firstDay), 53);
 
       // 새로 부팅되었지만, 부팅 카운트가 누락
-      final stepCount4 = StepCountWithTimestamp(32, 0, firstDay);
+      final stepCount4 = StepCountWithTimestamp(30, 0, firstDay);
       final stepData4 = stepData3.update(stepCount4);
-      expect(stepData4.getDailySteps(firstDay), 88);
+      expect(stepData4.getDailySteps(firstDay), 83);
     });
 
     test('json 형태로 변환/로드가 되어야한다', () {
       final emptyStepData = StepData.empty();
       final firstDay = TZDateTime(location, 2024, 11, 12, 1, 0, 0);
       final stepCount = StepCountWithTimestamp(10, 0, firstDay);
-      final updatedStepCount = StepCountWithTimestamp(20, 0, firstDay);
-      final rebootStepCount = StepCountWithTimestamp(100, 1, firstDay);
+      final updatedStepCount = StepCountWithTimestamp(100, 0, firstDay);
+      final rebootStepCount = StepCountWithTimestamp(20, 1, firstDay);
       final stepData = emptyStepData
           .update(stepCount)
           .update(updatedStepCount)
@@ -82,17 +82,17 @@ void main() {
       expect(json['previousDate'], '2024-11-11');
       expect(json['previousStepCount'], 10);
       expect(json['todayDate'], '2024-11-12');
-      expect(json['todayStepCount'], 100);
+      expect(json['todayStepCount'], 20);
       expect(json['bootCount'], 1);
-      expect(json['stack'], [20]);
+      expect(json['stack'], [100]);
 
       final stepData2 = StepData.fromJson(json);
       expect(stepData2.previousDate, '2024-11-11');
       expect(stepData2.previousStepCount, 10);
       expect(stepData2.todayDate, '2024-11-12');
-      expect(stepData2.todayStepCount, 100);
+      expect(stepData2.todayStepCount, 20);
       expect(stepData2.bootCount, 1);
-      expect(stepData2.stack, [20]);
+      expect(stepData2.stack, [100]);
 
       expect(stepData, stepData2);
     });

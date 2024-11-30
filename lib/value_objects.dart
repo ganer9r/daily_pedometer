@@ -60,12 +60,9 @@ class StepData {
         // 날짜가 변경 되었는데, 기존에 저장된 걸음수가 현재 걸음수보다 높거나
         // 부팅 카운트가 다르면 새로 부팅이 된 상태라서,
         // 기본 비교값을 0 으로 세팅함!
-        previousStepCount =
-            (stepData.todayStepCount > stepCount.stepsFromBoot ||
-                    (stepData.bootCount != stepCount.bootCount &&
-                        stepData.bootCount != null))
-                ? 0
-                : stepData.todayStepCount,
+        previousStepCount = (stepData.todayStepCount > stepCount.stepsFromBoot)
+            ? 0
+            : stepData.todayStepCount,
         todayDate = formatDate(stepCount.timeStamp),
         todayStepCount = stepCount.stepsFromBoot,
         bootCount = stepCount.bootCount,
@@ -120,8 +117,7 @@ class StepData {
     }
     // 부팅이 새로 되었다면, 기존 걸음수를 stack에 저장하고,
     // 0부터 다시 시작한다.
-    else if ((bootCount != stepCount.bootCount && bootCount != null) ||
-        stepCount.stepsFromBoot < todayStepCount) {
+    else if (stepCount.stepsFromBoot < todayStepCount) {
       return StepData.newBoot(this, stepCount);
     }
 

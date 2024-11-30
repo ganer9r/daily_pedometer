@@ -18,6 +18,8 @@ class DailyPedometer {
   final methodChannel = const MethodChannel('daily_pedometer');
   DailyPedometerStorage? _storage;
 
+  get storage => _storage;
+
   tz.Location? _timezone;
 
   factory DailyPedometer() {
