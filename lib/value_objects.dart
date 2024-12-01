@@ -7,7 +7,7 @@ class StepData {
   final int previousStepCount;
   final String? todayDate;
   final int todayStepCount;
-  final int? bootCount;
+  final int? bootCount; // bootCount가 지멋대로 올라가는 경우가 있어, 당장은 활용하지 않는다.
   final List<int> stack;
   final String? lastSavedAt;
   final String? previousStepCountSavedAt;

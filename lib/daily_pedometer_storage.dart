@@ -28,10 +28,20 @@ class DailyPedometerStorage {
 
   Future<void> debouncedSave(StepData data) async {
     final now = TZDateTime.now(_timezone);
+    final nextMidnight = now.add(const Duration(days: 1)).subtract(Duration(
+        hours: now.hour,
+        minutes: now.minute,
+        seconds: now.second,
+        milliseconds: now.millisecond,
+        microseconds: now.microsecond));
+
     // 마지막 저장이 오래되었거나,
+    // 날짜가 바뀌기 직전이거나,
     // 데이터의 날짜가 달라졌다면, 타이머 캔슬하고 바로 저장한다.
     if (_lastSaveTime == null ||
         _lastSaveTime!.isBefore(now.subtract(_maxDeboundDuration)) ||
+        (nextMidnight.difference(now).inMilliseconds < 1000 &&
+            now.difference(_lastSaveTime!).inMilliseconds > 1000) ||
         data.todayDate != formatDate(_lastSaveTime!)) {
       await save(data);
       _debounceTimer?.cancel();
@@ -52,6 +62,7 @@ class DailyPedometerStorage {
   TZDateTime? _lastReloadTime;
   static const _reloadDuration = Duration(minutes: 10);
   reload() async {
+    _lastReloadTime = TZDateTime.now(_timezone);
     SharedPreferences preferences = await SharedPreferences.getInstance();
     await preferences.reload();
   }
@@ -70,6 +81,17 @@ class DailyPedometerStorage {
 
     // 날짜가 달라졌다면, 리로드 필요.
     if (formatDate(now) != formatDate(_lastReloadTime!)) {
+      return true;
+    }
+
+    // 날짜가 바뀌기 직전이라면, 리로드 필요.
+    final nextMidnight = now.add(const Duration(days: 1)).subtract(Duration(
+        hours: now.hour,
+        minutes: now.minute,
+        seconds: now.second,
+        milliseconds: now.millisecond,
+        microseconds: now.microsecond));
+    if (nextMidnight.difference(now).inMilliseconds < 300 * 1000) {
       return true;
     }
 

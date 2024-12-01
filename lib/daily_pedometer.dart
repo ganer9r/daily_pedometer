@@ -70,8 +70,20 @@ class DailyPedometer {
     final durationToMidnight = nextMidnight.difference(now);
     final midnightStream = ConcatStream([
       Stream.value(1),
-      TimerStream(1, durationToMidnight + const Duration(seconds: 1)),
-      Stream.periodic(const Duration(days: 1)),
+      MergeStream<int>([
+        ConcatStream([
+          TimerStream(1, durationToMidnight - const Duration(seconds: 1)),
+          Stream.periodic(const Duration(days: 1)),
+        ]),
+        ConcatStream([
+          TimerStream(1, durationToMidnight),
+          Stream.periodic(const Duration(days: 1)),
+        ]),
+        ConcatStream([
+          TimerStream(1, durationToMidnight + const Duration(seconds: 1)),
+          Stream.periodic(const Duration(days: 1)),
+        ]),
+      ]),
     ]);
 
     final stepStream = Stream<dynamic>.value(null).concatWith(
