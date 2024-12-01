@@ -68,9 +68,9 @@ class DailyPedometer {
         milliseconds: now.millisecond,
         microseconds: now.microsecond));
     final durationToMidnight = nextMidnight.difference(now);
-    final midnightStream = ConcatStream([
+    final midnightStream = ConcatStream<int?>([
       Stream.value(1),
-      MergeStream<int>([
+      MergeStream([
         ConcatStream([
           TimerStream(1, durationToMidnight - const Duration(seconds: 1)),
           Stream.periodic(const Duration(days: 1)),
