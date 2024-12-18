@@ -53,6 +53,8 @@ class DailyPedometer {
       _timezone = tz.getLocation(await FlutterTimezone.getLocalTimezone());
     }
 
+    StepData.location = _timezone;
+
     _storage = DailyPedometerStorage(_timezone!);
 
     final bootCount = await getBootCount();

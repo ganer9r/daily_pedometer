@@ -3,6 +3,11 @@ import 'package:flutter/foundation.dart';
 import 'package:timezone/standalone.dart';
 
 class StepData {
+  static Location? _location;
+  static set location(Location? location) {
+    _location = location;
+  }
+
   final String? previousDate;
   final int previousStepCount;
   final String? todayDate;
@@ -19,8 +24,8 @@ class StepData {
         todayStepCount = json['todayStepCount'] ?? 0,
         bootCount = json['bootCount'],
         stack = json['stack']?.cast<int>() ?? [],
-        lastSavedAt = json['lastSavedAt'],
-        previousStepCountSavedAt = json['previousStepCountSavedAt'];
+        lastSavedAt = json['tzLastSavedAt'],
+        previousStepCountSavedAt = json['tzPreviousStepCountSavedAt'];
 
   StepData.empty()
       : previousDate = null,
@@ -50,7 +55,7 @@ class StepData {
         todayStepCount = stepCount.stepsFromBoot,
         bootCount = stepCount.bootCount,
         stack = [],
-        lastSavedAt = DateTime.now().toIso8601String(),
+        lastSavedAt = stepCount.timeStamp.toIso8601String(),
         previousStepCountSavedAt = null;
 
   // 날짜가 달라진 경우
@@ -67,7 +72,7 @@ class StepData {
         todayStepCount = stepCount.stepsFromBoot,
         bootCount = stepCount.bootCount,
         stack = [],
-        lastSavedAt = DateTime.now().toIso8601String(),
+        lastSavedAt = stepCount.timeStamp.toIso8601String(),
         previousStepCountSavedAt = stepData.lastSavedAt;
 
   // 부팅이 새로 된 경우
@@ -78,7 +83,7 @@ class StepData {
         todayStepCount = stepCount.stepsFromBoot,
         bootCount = stepCount.bootCount,
         stack = [...stepData.stack, stepData.todayStepCount],
-        lastSavedAt = DateTime.now().toIso8601String(),
+        lastSavedAt = stepCount.timeStamp.toIso8601String(),
         previousStepCountSavedAt = stepData.previousStepCountSavedAt;
 
   // 일반적인 상황에서 걸음 수 누적
@@ -89,7 +94,7 @@ class StepData {
         todayStepCount = stepCount.stepsFromBoot,
         bootCount = stepCount.bootCount,
         stack = stepData.stack,
-        lastSavedAt = DateTime.now().toIso8601String(),
+        lastSavedAt = stepCount.timeStamp.toIso8601String(),
         previousStepCountSavedAt = stepData.previousStepCountSavedAt;
 
   Map<String, dynamic> toJson() => {
@@ -99,11 +104,18 @@ class StepData {
         'todayStepCount': todayStepCount,
         'bootCount': bootCount,
         'stack': stack,
-        'lastSavedAt': lastSavedAt,
-        'previousStepCountSavedAt': previousStepCountSavedAt,
+        'tzLastSavedAt': lastSavedAt,
+        'tzPreviousStepCountSavedAt': previousStepCountSavedAt,
       };
 
   StepData update(StepCountWithTimestamp stepCount) {
+    // 오래된 stepCount는 무시한다.
+    if (lastSavedAt != null && _location != null) {
+      final dt = TZDateTime.parse(_location!, lastSavedAt!);
+      if (stepCount.timeStamp.isBefore(dt)) {
+        return this;
+      }
+    }
     // 오늘에 대한 정보가 없다면, 앱 설치등 초기 상태이므로
     // 걸음을 초기 상태부터 시작한다.
     if (todayDate == null) {
@@ -117,8 +129,11 @@ class StepData {
     }
     // 부팅이 새로 되었다면, 기존 걸음수를 stack에 저장하고,
     // 0부터 다시 시작한다.
-    else if (stepCount.stepsFromBoot < todayStepCount) {
+    // 가끔 센서값이 섞여서 들어오는 경우가 있어, 5보 정도의 오차는 무시한다.
+    else if (stepCount.stepsFromBoot < todayStepCount - 5) {
       return StepData.newBoot(this, stepCount);
+    } else if (stepCount.stepsFromBoot < todayStepCount) {
+      return this;
     }
 
     return StepData.accumulate(this, stepCount);

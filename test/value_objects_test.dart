@@ -9,6 +9,7 @@ void main() {
   initializeTimeZones();
   final location = getLocation('Asia/Seoul');
   group('StepData', () {
+    StepData.location = location;
     test('빈 StepData에 stepCount를 추가하면, 걸음수가 0부터 누적되어야 한다', () {
       final emptyStepData = StepData.empty();
       final firstDay = TZDateTime(location, 2024, 11, 12, 1, 0, 0);
@@ -55,14 +56,16 @@ void main() {
       expect(stepData2.getDailySteps(firstDay), 22);
 
       // 새로 부팅됨.
-      final stepCount3 = StepCountWithTimestamp(31, 1, firstDay);
+      final stepCount3 = StepCountWithTimestamp(
+          25, 1, firstDay.add(const Duration(seconds: 2)));
       final stepData3 = stepData2.update(stepCount3);
-      expect(stepData3.getDailySteps(firstDay), 53);
+      expect(stepData3.getDailySteps(firstDay), 47);
 
       // 새로 부팅되었지만, 부팅 카운트가 누락
-      final stepCount4 = StepCountWithTimestamp(30, 0, firstDay);
+      final stepCount4 = StepCountWithTimestamp(
+          19, 0, firstDay.add(const Duration(seconds: 3)));
       final stepData4 = stepData3.update(stepCount4);
-      expect(stepData4.getDailySteps(firstDay), 83);
+      expect(stepData4.getDailySteps(firstDay), 66);
     });
 
     test('json 형태로 변환/로드가 되어야한다', () {
@@ -85,6 +88,7 @@ void main() {
       expect(json['todayStepCount'], 20);
       expect(json['bootCount'], 1);
       expect(json['stack'], [100]);
+      expect(json['tzLastSavedAt'], '2024-11-12T01:00:00.000+0900');
 
       final stepData2 = StepData.fromJson(json);
       expect(stepData2.previousDate, '2024-11-11');
@@ -93,6 +97,7 @@ void main() {
       expect(stepData2.todayStepCount, 20);
       expect(stepData2.bootCount, 1);
       expect(stepData2.stack, [100]);
+      expect(stepData2.lastSavedAt, '2024-11-12T01:00:00.000+0900');
 
       expect(stepData, stepData2);
     });
@@ -161,5 +166,20 @@ void main() {
               .getDailySteps(TZDateTime(location, 2024, 11, 26, 13, 22, 0)),
           0);
     });
+  });
+
+  test("순서가 꼬여서 들어왔다면, 무시한다.", () {
+    const json =
+        '{"previousDate":"2024-11-24", "previousStepCount": 588682, "todayDate": "2024-11-25", "todayStepCount": 620085, "stack": []}';
+
+    final day = TZDateTime(location, 2024, 11, 25, 1, 0, 0);
+    final stepData = StepData.fromJson(jsonDecode(json))
+        .update(StepCountWithTimestamp(620086, 12, day));
+    expect(stepData.getDailySteps(day), 31404);
+    final delayedStepCount = StepCountWithTimestamp(
+        620085, 12, day.subtract(const Duration(seconds: 1)));
+
+    final stepData2 = stepData.update(delayedStepCount);
+    expect(stepData2.getDailySteps(day), 31404);
   });
 }
